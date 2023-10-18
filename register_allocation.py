@@ -8,6 +8,8 @@ k = Int('k')
 
 o = Optimize()
 
+i = 1
+limit = 1000
 for row in file:
     match row[0]:
         case 'c':
@@ -18,7 +20,10 @@ for row in file:
                 o.add(And(coloring(i) >= 1, coloring(i) <= k))
         case 'e':
             rows = row.split(' ')
-            o.add(coloring(int(rows[1])) != coloring(int(rows[1])))
+            o.add(coloring(int(rows[1])) != coloring(int(rows[2])))
+    i += 1
+    if i > limit:
+        break
 
 o.minimize(k)
 o.check()
