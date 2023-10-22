@@ -1,5 +1,6 @@
 from z3 import *
 import numpy as np
+import dd.autoref as bdd
 
 file = open("./big-dimacs/fpsol2.i.1.col", "r")
 
@@ -30,13 +31,44 @@ o.add(k == 30)
 # print(o.check())
 # print(o.model())
 
-t = Then('simplify', 'normalize-bounds', 'solve-eqs')
-r = t(o)
-print(r)
-print(r[0])
+# t = Then('simplify', 'normalize-bounds', 'solve-eqs')
+# r = t(o)
+# print(r)
+# print(r[0])
 
-s = Optimize()
-s.add(r[0])
-print(s.check())
-print(s.model())
+# s = Optimize()
+# s.add(r[0])
+# print(s.check())
+# print(s.model())
 # print(r.convert_model(s.model()))
+
+bdd = bdd.BDD()
+vert = 0
+for row in file:
+    match row[0]:
+        case 'c':
+            continue
+        case 'p':
+            rows = row.split(' ')
+            vert = int(rows[2])
+            for i in range(1, vert + 1):
+                for j in range(1, 6):
+                    bdd.add_var(f"x_{i}_{j}")
+            for j in range(1, 6):
+                bdd.add_var(f"k_{j}")
+            # for i in range(1, vert + 1):
+            #     bdd.add_expr(f"(k_{5} | !x_{i}_{5}) & 
+            #                     (!(!k_{5} & !k_{4}) | !x_{i}_{4}) &
+            #                     (!(!k_{5} & !k_{4} & !k_{3}) | !x_{i}_{3}) &
+            #                     (!(!k_{5} & !k_{4} & !k_{3} & !k_{2}) | !x_{i}_{2})")
+        case 'e':
+            rows = row.split(' ')
+            a = int(rows[1])
+            b = int(rows[2])
+            bdd.add_expr(f"""!((b_{a}_{5} & b_{b}_{5}) | (!b_{a}_{5} & !b_{b}_{5}))) |
+                            !((b_{a}_{4} & b_{b}_{4}) | (!b_{a}_{4} & !b_{b}_{4}))) |
+                            !((b_{a}_{3} & b_{b}_{3}) | (!b_{a}_{3} & !b_{b}_{3}))) |
+                            !((b_{a}_{2} & b_{b}_{2}) | (!b_{a}_{2} & !b_{b}_{2}))) |
+                            !((b_{a}_{1} & b_{b}_{1}) | (!b_{a}_{1} & !b_{b}_{1}))) |""")
+
+bdd.count()
