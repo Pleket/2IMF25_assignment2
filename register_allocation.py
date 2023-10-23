@@ -2,7 +2,7 @@ from z3 import *
 import numpy as np
 import dd.autoref as bdd
 
-file = open("./big-dimacs/fpsol2.i.1.col", "r")
+file = open("./big-dimacs/less-dimacs/gcd.col", "r")
 
 coloring = Function('coloring', IntSort(), IntSort())
 k = Int('k')
@@ -42,11 +42,13 @@ o.add(k == 30)
 # print(s.model())
 # print(r.convert_model(s.model()))
 
-bdd = bdd.BDD()
+bdd1 = bdd.BDD()
 vert = 0
 first = True
 u = None
 file.seek(0)
+expressions = []
+expressions.append("(k_5 & !k_4 & k_3 & k_2 & k_1)")
 for row in file:
     match row[0]:
         case 'c':
@@ -56,29 +58,34 @@ for row in file:
             vert = int(rows[2])
             for i in range(1, vert + 1):
                 for j in range(1, 6):
-                    bdd.add_var(f"x_{i}_{j}")
+                    bdd1.declare(f"x_{i}_{j}")
             for j in range(1, 6):
-                bdd.add_var(f"k_{j}")
-            # for i in range(1, vert + 1):
-            #     z = bdd.add_expr(f"(k_{5} | !x_{i}_{5}) & 
-            #                     (!(!k_{5} & !k_{4}) | !x_{i}_{4}) &
-            #                     (!(!k_{5} & !k_{4} & !k_{3}) | !x_{i}_{3}) &
-            #                     (!(!k_{5} & !k_{4} & !k_{3} & !k_{2}) | !x_{i}_{2})")
-            # if first:
-            #     u = z
-            #     first = False
+                bdd1.declare(f"k_{j}")
+            for i in range(1, vert + 1):
+                expressions.append(f"""((k_{5} | !x_{i}_5) & 
+                                (!(!k_5 & !k_4) | !x_{i}_4) &
+                                (!(!k_5 & !k_4 & !k_3) | !x_{i}_3) &
+                                (!(!k_5 & !k_4 & !k_3 & !k_2) | !x_{i}_2))""")
         case 'e':
             rows = row.split(' ')
             a = int(rows[1])
             b = int(rows[2])
-            z = bdd.add_expr(f"""!((x_{a}_{5} & x_{b}_{5}) | (!x_{a}_{5} & !x_{b}_{5})) |
-                            !((x_{a}_{4} & x_{b}_{4}) | (!x_{a}_{4} & !x_{b}_{4})) |
-                            !((x_{a}_{3} & x_{b}_{3}) | (!x_{a}_{3} & !x_{b}_{3})) |
-                            !((x_{a}_{2} & x_{b}_{2}) | (!x_{a}_{2} & !x_{b}_{2})) |
-                            !((x_{a}_{1} & x_{b}_{1}) | (!x_{a}_{1} & !x_{b}_{1}))""")
-            if first:
-                u = z
-            # print(u)
-            # print(u.negated)
+            expressions.append(f"""(!((x_{a}_5 & x_{b}_5) | (!x_{a}_5 & !x_{b}_5)) |
+                            !((x_{a}_4 & x_{b}_4) | (!x_{a}_4 & !x_{b}_4)) |
+                            !((x_{a}_3 & x_{b}_3) | (!x_{a}_3 & !x_{b}_3)) |
+                            !((x_{a}_2 & x_{b}_2) | (!x_{a}_2 & !x_{b}_2)) |
+                            !((x_{a}_1 & x_{b}_1) | (!x_{a}_1 & !x_{b}_1)))""")
+u = bdd1.add_expr(" & ".join(expressions))
 
-print(bdd.count(u))
+print(bdd1.count(u))
+
+# check_bdd = bdd.BDD()
+# check_bdd.declare("x", "y")
+# z1 = check_bdd.add_expr("x")
+# z2 = check_bdd.add_expr("!y")
+# print(check_bdd.count(z1))
+# models = list(check_bdd.pick_iter(z1, ['x', 'y']))
+# print(models)
+# print(check_bdd.count(z2))
+# models = list(check_bdd.pick_iter(z2, ['x', 'y']))
+# print(models)
